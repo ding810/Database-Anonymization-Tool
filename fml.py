@@ -1,6 +1,6 @@
-from ast import parse
 from math import ceil, sqrt
 import numpy as np
+import math
 
 class Node:
     def __init__(self, val = None):
@@ -96,13 +96,13 @@ def categorical_dist(r1,r2,name,tree):
     return find_num_leaf(parent)/total_leaf_nodes
 
 
-def dist(r1,r2, data, tree_dict):
+def dist(r1,r2, T, tree_dict):
     ans = 0
     for name in r1.dtype.names:
         if name in tree_dict:
             ans += categorical_dist(r1,r2, name,tree_dict[name])
         else:
-            ans += numerical_dist(r1,r2,name, data)
+            ans += numerical_dist(r1,r2,name, T)
     return ans
 
 
@@ -114,23 +114,32 @@ def get_height(node, h):
     
 
 def calc_categorical_information_loss(values, tree):
-    # add case where only one value maybe
-
-    lowest_common_ancestor = find_parent_node(values[0], values[1],tree)
-    ind = 2
-    while ind < len(values):
-        lowest_common_ancestor = find_parent_node(lowest_common_ancestor,values[ind],tree)
-        ind += 1
-    return get_height(lowest_common_ancestor,1), get_height(tree,1)
+    elements = set()
+    for ele in values:
+        elements.add(ele)
+    
+    ele = elements.pop()
+    lowest_common_ancestor = find_parent_node(ele,ele,tree)
+    
+    while elements:
+            ele = elements.pop()
+            lowest_common_ancestor = find_parent_node(lowest_common_ancestor.value,ele,tree)
+    return get_height(lowest_common_ancestor,1)/ get_height(tree,1)
 
 def calc_information_loss(equiv_class, tree_dict):
+    
     ans = 0
     for name in equiv_class[0].dtype.names:
         if name in tree_dict:
-            ans += calc_categorical_information_loss(equiv_class[name], tree_dict[name])
+            xd = calc_categorical_information_loss(equiv_class[name], tree_dict[name])
+            ans += xd
         else:
             ans += (max(equiv_class[name]) - min(equiv_class[name])/len(equiv_class))
     ans *= len(equiv_class)
+    # print("info loss for equiv class:")
+    # print(equiv_class)
+    # print("is: ", ans)
+    # print()
     return ans
 
 def get_weight_score(e):
@@ -142,80 +151,118 @@ def get_weight_score(e):
     return sqrt(ans)
 
 
-def find_next_record(T, e):
+def find_next_record(T, e,tree_dict):
     min_loss = math.inf
     min_record_ind = -1
+    # print("starting finding next record")
+    # print(T)
+    # print(e)
     for ind in range(T.shape[0]):
-        info_loss = calc_information_loss(e.append(T[ind]))
-        weight_score = get_weight_score(e.append(T[ind]))
+        info_loss = calc_information_loss(np.append(e,T[ind]),tree_dict)
+        weight_score = get_weight_score(np.append(e,T[ind]))
         if info_loss * weight_score < min_loss:
             min_loss = info_loss * weight_score
             min_record_ind = ind
+    # print("next record is")
+    # print(T[min_record_ind])
     return min_record_ind
 
 
-def find_next_centroid(T,T_copy, E, D):
+def find_next_centroid(T,T_copy, D):
+    # print("finding next centroid")
+    # print("T is")
+    # print(T)
+    # print("T_copy")
+    # print(T_copy)
+    # print("D is")
+    # print(D)
     max_dist = math.inf
     max_record_ind = -1
     for ind in range(T_copy.shape[0]):
-        distances = T[T['id'] == T_copy[ind]['id']]
-        distance = np.linalg.norm(distances)
+        ind = np.where(T['id'] == T_copy[ind]['id'])[0][0]
+        distance = np.linalg.norm(D[ind])
         if distance > max_dist:
             max_dist = distance
             max_record_ind = ind
+    # print("next centroid is")
+    # print(T_copy[max_record_ind])
     return max_record_ind
         
 
-def grouping_phase(T, WT, K):
+def grouping_phase(T, WT, K, tree_dict):
     D = np.empty([T.shape[0], ceil(T.shape[0]/K)])
     T_copy = np.copy(T)
     E = []
     rand_ind = np.random.randint(0,T.shape[0])
+    # print("starting grouping phase")
+    # print("rand int is: ",rand_ind)
+    # print()
+
     while T_copy.shape[0] >= K:
+        # print("current E is: ")
+        # print(E)
+        # print("current D: ")
+        # print(D)
+        # print()
         if not E:
             e = np.array([T[rand_ind]])
             T_copy = np.delete(T_copy,rand_ind)
             while e.size < K:
-                ind = find_next_record(T_copy,e)
-                e = e.append(T_copy[ind])
+                ind = find_next_record(T_copy,e,tree_dict)
+                e = np.append(e,T_copy[ind])
                 T_copy = np.delete(T_copy, ind)
             E.append(e)
             for i in range(D.shape[0]):
-                D[i,len(E)-1] = dist(T[rand_ind],T[i])
+                D[i,len(E)-1] = dist(T[rand_ind],T[i],T,tree_dict)
             
         else:
-            centroid_ind = find_next_centroid(T,T_copy,E,D)
+            centroid_ind = find_next_centroid(T,T_copy,D)
             centroid = T_copy[centroid_ind]
             e = np.array([centroid])
             T_copy = np.delete(T_copy, centroid_ind)
             while e.size < K:
-                ind = find_next_record(T_copy,e)
-                e = e.append(T_copy[ind])
+                ind = find_next_record(T_copy,e,tree_dict)
+                e = np.append(e,T_copy[ind])
                 T_copy = np.delete(T_copy, ind)
             E.append(e)
             for i in range(D.shape[0]):
-                D[i,len(E)-1] = dist(centroid,T[i])
+                D[i,len(E)-1] = dist(centroid,T[i],T,tree_dict)
+    left_over = None
     if T_copy.shape[0] > 0:
-        E.append(T_copy)
+        left_over = T_copy
 
-    return E
+    return E,left_over
+
+
+def final_fker(clusters,outliers,leftovers):
+    pass
 
 
 print("fml")
 
-test_data = np.array([(1,2,'State-gov',13,'M'),\
-                        (2,3,'Self-emp',13,'M'),\
-                        (3,2,'Private',9,'M'),\
-                        (4,3,'Private',7,'M'),\
-                        (5,1,'Private',13,'F'),\
-                        (6,2,'Private',14,'F'),\
-                        (7,3,'Private',5,'F'),\
-                        (8,3,'Self-emp',9,'M'),\
-                        (9,1,'Private',14,'F'),\
-                        (10,2,'Private',13,'M'),\
-                        (11,2,'Private',10,'M')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('sex','U1')])
+test_data = np.array([(1,2,'State-gov',13,'Male'),\
+                        (2,3,'Self-emp',13,'Male'),\
+                        (3,2,'Private',9,'Male'),\
+                        (4,3,'Private',7,'Male'),\
+                        (6,2,'Private',14,'Female'),\
+                        (7,3,'Private',5,'Female'),\
+                        (8,3,'Self-emp',9,'Male'),\
+                        (9,1,'Private',14,'Female'),\
+                        (10,2,'Private',13,'Male'),\
+                        (11,2,'Private',10,'Male')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('sex','U10')])
 
+outliers = np.array([(5,1,'Private',13,'Female')])
 tree_dict = parse_heirarchies('heirarchy.txt')
+print("test_data is: ")
+print(test_data)
+print()
+
+print("groupings are: ")
+ans,leftover = grouping_phase(test_data,[],3,tree_dict)
+for group in ans:
+    print(group)
+    print()
+print(leftover)
 
 
 
