@@ -240,6 +240,8 @@ def grouping_phase(T, WT, K, tree_dict):
 
 
 def final_fker(clusters,outliers,leftovers, tree_dict):
+    leftovers = list(leftovers)
+    outliers = list(outliers)
     while leftovers:
         r = leftovers.pop(-1)
         min_ind = -1
@@ -288,6 +290,12 @@ for group in ans:
     print()
 print(leftover)
 
+print("after adjustment:")
+ans = (final_fker(ans,leftover,[],tree_dict))
+for group in ans:
+    print(group)
+    print()
+    
 
 
 
