@@ -168,6 +168,11 @@ def find_next_record(T, e,tree_dict):
     return min_record_ind
 
 
+def calculate_weighted_information_loss(cluster, tree_dict):
+    info_loss = calc_information_loss(cluster,tree_dict)
+    return get_weight_score(cluster) * info_loss
+
+
 def find_next_centroid(T,T_copy, D):
     # print("finding next centroid")
     # print("T is")
@@ -234,8 +239,27 @@ def grouping_phase(T, WT, K, tree_dict):
     return E,left_over
 
 
-def final_fker(clusters,outliers,leftovers):
-    pass
+def final_fker(clusters,outliers,leftovers, tree_dict):
+    while leftovers:
+        r = leftovers.pop(-1)
+        min_ind = -1
+        min_info_loss = math.inf
+        for ind,cluster in enumerate(clusters):
+            wil = calculate_weighted_information_loss(np.append(cluster,r), tree_dict) - calculate_weighted_information_loss(cluster, tree_dict)
+            if wil < min_info_loss:
+                min_info_loss, min_ind = wil, ind
+        clusters[min_ind] = np.append(clusters[min_ind],r)
+    while outliers:
+        r = outliers.pop(-1)
+        min_ind = -1
+        min_info_loss = math.inf
+        for ind,cluster in enumerate(clusters):
+            wil = calculate_weighted_information_loss(np.append(cluster,r), tree_dict) - calculate_weighted_information_loss(cluster, tree_dict)
+            if wil < min_info_loss:
+                min_info_loss, min_ind = wil, ind
+        clusters[min_ind] = np.append(clusters[min_ind],r)
+    return clusters
+
 
 
 print("fml")
