@@ -2,8 +2,15 @@ import pandas as pd
 import numpy as np
 
 def weighting(table: pd.DataFrame, beta: int):
+    hasID = False
+    if "ID" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
+        hasID = True
+        ids = table["ID"]
+        table = table.drop("ID", axis=1)
+
     num_records = table.shape[0]
     num_attr = table.shape[1]
+
     if beta is None: 
         beta = int(0.05 * num_records)
 
@@ -60,7 +67,18 @@ def weighting(table: pd.DataFrame, beta: int):
     outliers = [] # the indexes of the records that are outliers
     for i in arscores[num_records-beta:]:
         outliers.append(i[1])
-    return (weightscores, outliers)
+    
+    weightscores_id = {} # maps record (by their true ID) to their weight scores
+    if hasID:
+        ind_to_id = ids.to_dict()
+        for key in weightscores:
+            weightscores_id[ind_to_id[key]] = weightscores[key]
+        for ind, out in enumerate(outliers):
+            outliers[ind] = ind_to_id[out]
+    else:
+        weightscores_id = weightscores
+
+    return (weightscores_id, outliers)
 
 def main():
     # test1 = pd.DataFrame({'a': [1, 2] * 3,
