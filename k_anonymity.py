@@ -1,3 +1,7 @@
+import pandas as pd
+import numpy as np
+
+
 from math import ceil, sqrt
 import numpy as np
 import math
@@ -143,7 +147,7 @@ def calc_information_loss(equiv_class, tree_dict):
     return ans
 
 def get_weight_score(e):
-    id_to_phase1_dict = {1:(1,5.5), 2:(2,5.0), 3:(3,3.5), 4:(4,6.5), 5:(5,8.0), 6:(5,4.0), 7:(6,10.0), 8:(7,3.5), 9:(7,7.5), 10:(8,1.0), 11:(8,.5)}
+    id_to_phase1_dict = {5:(1,10), 9:(2,9), 7:(3,8), 1:(4,7), 2:(5,6), 6:(5,6), 10:(6,5), 4:(7,4), 11:(7,4), 3:(8,3), 8:(8,3)}
     ans = 0
     for rec in e:
         weight = id_to_phase1_dict[rec['id']][1]
@@ -251,7 +255,6 @@ def final_fker(clusters,outliers,leftovers, tree_dict):
             if wil < min_info_loss:
                 min_info_loss, min_ind = wil, ind
         clusters[min_ind] = np.append(clusters[min_ind],r)
-    
     while outliers:
         r = outliers.pop(-1)
         min_ind = -1
@@ -262,53 +265,6 @@ def final_fker(clusters,outliers,leftovers, tree_dict):
                 min_info_loss, min_ind = wil, ind
         clusters[min_ind] = np.append(clusters[min_ind],r)
     return clusters
-
-
-
-print("fml")
-test_data = np.array([(1,2,'State-gov',13,'Never-married','Adm-clerical','White','Male','USA'),\
-(2,3,'Self-emp',13,'Married','Exec-managerial','White','Male','USA'),\
-(3,2,'Private',9,'Divorced','Handlers-cleaners','White','Male','USA'),\
-(4,3,'Private',7,'Married','Handlers-cleaners','Black','Male','USA'),\
-(5,1,'Private',13,'Married','Prof-specialty','Black','Female','Cuba'),\
-(6,2,'Private',14,'Married','Exec-managerial','White','Female','USA'),\
-(7,3,'Private',5,'Any','Other-service','Black','Female','Jamaica'),\
-(9,1,'Private',14,'Never-married','Prof-specialty','White','Female','USA')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('martial-status','U20'),('occupation','U20'),('race','U20'),('sex','U20'),('native-country','U20')] )
-# test_data = np.array([(1,2,'State-gov',13,'Male'),\
-#                         (2,3,'Self-emp',13,'Male'),\
-#                         (3,2,'Private',9,'Male'),\
-#                         (4,3,'Private',7,'Male'),\
-#                         (6,2,'Private',14,'Female'),\
-#                         (7,3,'Private',5,'Female'),\
-#                         (8,3,'Self-emp',9,'Male'),\
-#                         (9,1,'Private',14,'Female'),\
-#                         (10,2,'Private',13,'Male'),\
-#                         (11,2,'Private',10,'Male')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('sex','U10')])
-
-outliers = np.array([(8,3,'Self-emp',9,'Married','Exec-managerial','White','Male','USA'),\
-    (10,2,'Private',13,'Married','Exec-managerial','White','Male','USA'),\
-(11,2,'Private',10,'Married','Exec-managerial','Black','Male','USA')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('martial-status','U20'),('occupation','U20'),('race','U20'),('sex','U20'),('native-country','U20')])
-tree_dict = parse_heirarchies('heirarchy.txt')
-print("test_data is: ")
-print(test_data)
-print()
-
-print("groupings are: ")
-ans,leftover = grouping_phase(test_data,[],3,tree_dict)
-for group in ans:
-    print(group)
-    print()
-print('xd')
-print(leftover)
-
-print("after adjustment:")
-ans = (final_fker(ans,leftover,outliers,tree_dict))
-for group in ans:
-    print(group)
-    print()
-    
-
-
 
 # workclass_tree = tree_dict['workclass']
 
@@ -325,3 +281,153 @@ for group in ans:
 
 # print(dist(test_data[0],test_data[1],test_data,tree_dict))
 
+
+def weighting(table: pd.DataFrame, beta: int):
+    hasID = False
+    if "ID" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
+        hasID = True
+        ids = table["ID"]
+        table = table.drop("ID", axis=1)
+
+    num_records = table.shape[0]
+    num_attr = table.shape[1]
+
+    if beta is None: 
+        beta = int(0.05 * num_records)
+
+    numerical = table.select_dtypes(include='number') # DataFrame with only numerical attributes
+    num_numer_attr = numerical.shape[1]
+
+    categorical = table.select_dtypes(exclude='number') # DataFrame with only categorical attributes
+    num_categ_attr = categorical.shape[1]
+
+    numerical_avgs = [] # array of averages of each numerical attribute
+    for attr in numerical:
+        numerical_avgs.append(numerical[attr].mean())
+    numerical_avgs = pd.Series(data=numerical_avgs, index=numerical.columns) # converted into pd series
+
+    freqs = [] # array of dictionaries, each corresponding to an attribute, each dict maps outcome to frequency of outcome
+    for attr in categorical:
+        dict = {}
+        for record in categorical[attr]:
+            if record in dict:
+                dict[record] += 1
+            else:
+                dict[record] = 1
+        freqs.append(dict)
+    freqs = pd.Series(data=freqs, index=categorical.columns) # converted into pd series
+
+    nscores = {} # dictionary mapping record to numerical score
+    for ind1, record in numerical.iterrows():
+        total = 0
+        for ind2, value in record.items():
+            total += np.abs(value - numerical_avgs[ind2])
+        nscores[ind1] = total
+    
+    cscores = {} # dictionary mapping record to categorical score
+    for ind1, record in categorical.iterrows():
+        total = 0
+        for ind2, value in record.items():
+            total += freqs[ind2][value]
+        cscores[ind1] = total / num_categ_attr
+
+    nscores_sorted = sorted(nscores.items(), key = lambda x: x[1], reverse=True) # numerical scores sorted by score descending
+    cscores_sorted = sorted(cscores.items(), key = lambda x: x[1]) # categorical scores sorted by score ascending
+    num_rankings = {} # maps record number to numerical score ranking (starting from 1 to num_records)
+    cat_rankings = {} # maps record number to categorical score ranking (starting from 1 to num_records)
+    for ind in range(num_records):
+        num_rankings[nscores_sorted[ind][0]] = ind+1
+        cat_rankings[cscores_sorted[ind][0]] = ind+1
+    arscores = [] # average rank scores and their corresponding record index
+    weightscores = {} # maps records to their weight scores
+    for recordind in range(num_records):
+        score = np.average([num_rankings[recordind], cat_rankings[recordind]])
+        arscores.append([score, recordind])
+        weightscores[recordind] = num_records - score
+    arscores.sort(key = lambda x: x[0])
+    outliers = [] # the indexes of the records that are outliers
+    for i in arscores[num_records-beta:]:
+        outliers.append(i[1])
+    
+    weightscores_id = {} # maps record (by their true ID) to their weight scores
+    if hasID:
+        ind_to_id = ids.to_dict()
+        for key in weightscores:
+            weightscores_id[ind_to_id[key]] = weightscores[key]
+        for ind, out in enumerate(outliers):
+            outliers[ind] = ind_to_id[out]
+    else:
+        weightscores_id = weightscores
+
+    return (weightscores_id, outliers)
+
+
+def main():
+    # test1 = pd.DataFrame({'a': [1, 2] * 3,
+    #                'b': [True, False] * 3,
+    #                'c': [1.0, 2.0] * 3})
+    # print(weighting(test1, 0))
+    test2 = pd.read_csv('testing.csv')
+    print("Example csv file: ")
+    column_names = list(test2.columns)
+    d_types = test2.dtypes
+    # d_types = [d_type if (d_type == np.int64) else np.dtype('U30') for d_type in d_types ]
+    np_dtypes = []
+    for i in range(len(column_names)):
+        np_dtypes.append((column_names[i],d_types[i]))
+
+          
+    test2 = test2.to_numpy()
+    test2 = [list(row) for row in test2]
+    print(test2)
+    print(np_dtypes)  
+    test2 = np.array(test2,np_dtypes)
+    # newshit = np.array([],dtype=np_dtypes)
+    # print(test2)
+    print()
+    print()
+    weightscores, outliers = weighting(test2, 3)
+    print("Weight scores and outliers: ")
+    print(weightscores)
+    print()
+    print(outliers)
+    print()
+    print()
+    
+    # test_data = test2.to_numpy(dtype=np_dtypes)
+    # print(test_data.dtype)
+    print("fml")
+
+    test_data = np.array([(1,2,'State-gov',13,'Male'),\
+                            (2,3,'Self-emp',13,'Male'),\
+                            (3,2,'Private',9,'Male'),\
+                            (4,3,'Private',7,'Male'),\
+                            (6,2,'Private',14,'Female'),\
+                            (7,3,'Private',5,'Female'),\
+                            (8,3,'Self-emp',9,'Male'),\
+                            (9,1,'Private',14,'Female'),\
+                            (10,2,'Private',13,'Male'),\
+                            (11,2,'Private',10,'Male')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('sex','U10')])
+
+    outliers = np.array([(5,1,'Private',13,'Female')])
+    tree_dict = parse_heirarchies('heirarchy.txt')
+    # print("test_data is: ")
+    # print(test_data)
+    # print()
+
+    # print("groupings are: ")
+    # ans,leftover = grouping_phase(test_data,[],3,tree_dict)
+    # for group in ans:
+    #     print(group)
+    #     print()
+    # print(leftover)
+
+    # print("after adjustment:")
+    # ans = (final_fker(ans,leftover,[],tree_dict))
+    # for group in ans:
+    #     print(group)
+    #     print()
+
+
+if __name__ == '__main__':
+    main()

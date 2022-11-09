@@ -87,6 +87,7 @@ def main():
     # print(weighting(test1, 0))
     test2 = pd.read_csv('testing.csv')
     weightscores, outliers = weighting(test2, 3)
+    # print(test2)
     print(weightscores)
     print(outliers)
 
