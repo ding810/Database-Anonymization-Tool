@@ -2,14 +2,14 @@ import pandas as pd
 import numpy as np
 
 def weighting(table: pd.DataFrame, beta: int):
+    num_records = table.shape[0]
+    num_attr = table.shape[1]
+
     hasID = False
-    if "ID" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
+    if "ID" in table or "id" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
         hasID = True
         ids = table["ID"]
         table = table.drop("ID", axis=1)
-
-    num_records = table.shape[0]
-    num_attr = table.shape[1]
 
     if beta is None: 
         beta = int(0.05 * num_records)
@@ -85,11 +85,11 @@ def main():
     #                'b': [True, False] * 3,
     #                'c': [1.0, 2.0] * 3})
     # print(weighting(test1, 0))
-    test2 = pd.read_csv('testing.csv')
+    test2 = pd.read_csv(filepath_or_buffer='adult.csv')
     weightscores, outliers = weighting(test2, 3)
     # print(test2)
-    print(weightscores)
-    print(outliers)
+    # print(weightscores)
+    # print(outliers)
 
 
 if __name__ == '__main__':
