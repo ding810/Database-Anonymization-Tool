@@ -8,8 +8,12 @@ def weighting(table: pd.DataFrame, beta: int):
     hasID = False
     if "ID" in table or "id" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
         hasID = True
-        ids = table["ID"]
-        table = table.drop("ID", axis=1)
+        if "ID" in table:
+            ids = table["ID"]
+            table = table.drop("ID", axis=1)
+        else:
+            ids = table["id"]
+            table = table.drop("id", axis=1)
 
     if beta is None: 
         beta = int(0.05 * num_records)
@@ -85,8 +89,10 @@ def main():
     #                'b': [True, False] * 3,
     #                'c': [1.0, 2.0] * 3})
     # print(weighting(test1, 0))
-    test2 = pd.read_csv(filepath_or_buffer='adult.csv')
-    weightscores, outliers = weighting(test2, 3)
+    test1 = pd.read_csv('testing.csv')
+    print(weighting(test1,3))
+    # test2 = pd.read_csv(filepath_or_buffer='adult.csv')
+    # weightscores, outliers = weighting(test2, 3)
     # print(test2)
     # print(weightscores)
     # print(outliers)
