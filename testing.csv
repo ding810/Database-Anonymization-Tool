@@ -1,5 +1,5 @@
-ID,Age,Work.,Edu.,Mari.,Occu.,Race,Sex,Country
-1,2,State-gov,13,Never,Adm-clerical,White,M,USA
+id,age,workclass,education-num,marital-status,occupation,race,sex,native-country
+1,2,State-gov,13,Never-married,Adm-clerical,White,M,USA
 2,3,Self-emp,13,Married,Exec-managerial,White,M,USA
 3,2,Private,9,Divorced,Handlers-cleaners,White,M,USA
 4,3,Private,7,Married,Handlers-cleaners,Black,M,USA
@@ -7,6 +7,6 @@ ID,Age,Work.,Edu.,Mari.,Occu.,Race,Sex,Country
 6,2,Private,14,Married,Exec-managerial,White,F,USA
 7,3,Private,5,Absent,Other-service,Black,F,Jamaica
 8,3,Self-emp,9,Married,Exec-managerial,White,M,USA
-9,1,Private,14,Never,Prof-specialty,White,F,USA
+9,1,Private,14,Never-married,Prof-specialty,White,F,USA
 10,2,Private,13,Married,Exec-managerial,White,M,USA
 11,2,Private,10,Married,Exec-managerial,Black,M,USA

@@ -88,7 +88,15 @@ def find_next_record(T, e,tree_dict, weight_dict):
     min_loss = math.inf
     min_record_ind = -1
     for ind in range(T.shape[0]):
-        result = calculate_weighted_information_loss(np.append(e,T[ind], tree_dict, weight_dict))
+        # new = 
+        print()
+        print()
+        # print('xd')
+        # print(e)
+        # print(new)
+        print
+        print(T.iloc[[ind]])
+        result = calculate_weighted_information_loss(pd.concat([e,T.iloc[[ind]]]), tree_dict, weight_dict)
         if result < min_loss:
             min_loss = result
             min_record_ind = ind
@@ -108,26 +116,36 @@ def find_next_centroid(T,T_copy, D):
 
 def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], weight_dict : Dict[int,int]) -> Tuple[List[pd.DataFrame], pd.DataFrame]: 
     D = np.empty([T.shape[0], math.ceil(T.shape[0]/K)])
-    T_copy = np.copy(T)
+    T_copy = T.copy(deep=True)
     E = []
     rand_ind = np.random.randint(0,T.shape[0])
+    print("rand_ind is: ", rand_ind)
 
     while T_copy.shape[0] >= K:
         if not E:
-            e = np.array([T[rand_ind]])
-            T_copy = np.delete(T_copy,rand_ind)
-            while e.size < K:
+            e = pd.DataFrame(T_copy.iloc[[rand_ind]])
+            T_copy = T_copy.drop([rand_ind])
+            while e.shape[0] < K:
                 ind = find_next_record(T_copy,e,tree_dict, weight_dict)
-                e = np.append(e,T_copy[ind])
-                T_copy = np.delete(T_copy, ind)
+                print("ind is: ", ind)
+                print(T_copy)
+                e = e.append(T_copy.iloc[[ind]], ignore_index=True)
+                T_copy = T_copy.drop(rand_ind)
+                # e = np.append(e,T_copy[ind])
+                # T_copy = np.delete(T_copy, ind)
             E.append(e)
+            print()
+            print()
+            print("xd 100")
+            print(e)
+
             for i in range(D.shape[0]):
-                D[i,len(E)-1] = dist(T[rand_ind],T[i],T,tree_dict)
+                D[i,len(E)-1] = dist(T.loc[rand_ind],T.loc[i],T,tree_dict)
             
         else:
             centroid_ind = find_next_centroid(T,T_copy,D)
-            centroid = T_copy[centroid_ind]
-            e = np.array([centroid])
+            centroid = T_copy.loc[centroid_ind]
+            e = pd.DataFrame(T_copy.loc[centroid_ind])
             T_copy = np.delete(T_copy, centroid_ind)
             while e.size < K:
                 ind = find_next_record(T_copy,e,tree_dict, weight_dict)
@@ -173,12 +191,10 @@ print("fml")
 
 test_data = pd.read_csv('testing.csv')
 weight_dict, outliers = weighting(test_data, 3)
-outlier_records = test_data.loc[test_data['ID'].isin(outliers)]
-
-outlier_inds = [np.where(test_data['ID'] == outlier)[0][0] for outlier in outliers]
+outlier_records = test_data.loc[test_data['id'].isin(outliers)]
+outlier_inds = [np.where(test_data['id'] == outlier)[0][0] for outlier in outliers]
 test_data = test_data.drop(test_data.index[outlier_inds])
 print(test_data)
-print(outlier_records)
 
 tree_dict = parse_heirarchies('heirarchy.txt')
 ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)

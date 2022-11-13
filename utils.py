@@ -83,7 +83,7 @@ def get_height(node, h):
 # helper functions in calculating distances between two records
 def dist(r1,r2, T, tree_dict):
     ans = 0
-    for name in r1.dtype.names:
+    for name in T.columns:
         if name in tree_dict:
             ans += categorical_dist(r1,r2, name,tree_dict[name])
         else:
@@ -91,8 +91,17 @@ def dist(r1,r2, T, tree_dict):
     return ans
 
 def categorical_dist(r1,r2,name,tree):
+    # print("here xd")
+    # print(r1)
+    # print(r2)
+    # print(name)
     if r1[name] == r2[name]: return 0
     total_leaf_nodes = find_num_leaf(tree)
+    # print()
+    # print()
+    # print("xd1")
+    # print(r1[name], "  ",r2[name])
+    # print([neigh.value for neigh in tree.neighbors])
     parent = find_parent_node(r1[name],r2[name],tree)
     return find_num_leaf(parent)/total_leaf_nodes 
 
@@ -118,7 +127,9 @@ def get_weight_score(cluster, weight_dict):
 def calc_information_loss(equiv_class, tree_dict):
     
     ans = 0
-    for name in equiv_class[0].dtype.names:
+    print('xd2')
+    print(equiv_class.columns)
+    for name in equiv_class.columns:
         if name in tree_dict:
             ans += calc_categorical_information_loss(equiv_class[name], tree_dict[name])
         else:

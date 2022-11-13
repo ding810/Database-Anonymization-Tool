@@ -1,3 +1,7 @@
+classes:discrete
+{Any Class 
+	{>50K} 
+	{<=50K}}
 age:continuous
 {15-95 {ignored}}
 workclass:discrete
@@ -45,7 +49,7 @@ education:discrete
 			{Doctorate}}}}}
 education-num:continuous
 {1-20 {ignored}}
-martial-status:discrete 
+marital-status:discrete 
 {Any 
 	{Married 
 		{Partner-present 
