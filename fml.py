@@ -2,8 +2,9 @@ import math
 import numpy as np
 import pandas as pd
 from utils import *
+from typing import Dict, Type, List, Tuple
 
-def weighting(table: pd.DataFrame, beta: int):
+def weighting(table: pd.DataFrame, beta: int) -> Tuple[Dict[int, int], List[int]]:
     hasID = False
     if "ID" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
         hasID = True
@@ -105,7 +106,7 @@ def find_next_centroid(T,T_copy, D):
     return max_record_ind
         
 
-def grouping_phase(T, K, tree_dict, weight_dict):
+def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], weight_dict : Dict[int,int]) -> Tuple[List[pd.DataFrame], pd.DataFrame]: 
     D = np.empty([T.shape[0], math.ceil(T.shape[0]/K)])
     T_copy = np.copy(T)
     E = []
@@ -170,53 +171,19 @@ def add_leftovers(clusters,outliers,leftovers, tree_dict, weight_dict):
 
 print("fml")
 
-test2 = pd.read_csv('testing.csv')
-weightscores, outliers = weighting(test2, 3)
-print(weightscores)
-print(outliers)
+test_data = pd.read_csv('testing.csv')
+weight_dict, outliers = weighting(test_data, 3)
+outlier_records = test_data.loc[test_data['ID'].isin(outliers)]
 
-print()
-print("before removing outliers")
-print(test2)
-print("after removing outliers")
-for outlier in outliers:
-    ind = np.where(test2['ID'] == outlier)[0][0]
-    print(ind)
-    test2 = test2.drop(labels=str(ind))
-print()
-print(test2)
+outlier_inds = [np.where(test_data['ID'] == outlier)[0][0] for outlier in outliers]
+test_data = test_data.drop(test_data.index[outlier_inds])
+print(test_data)
+print(outlier_records)
 
-# test_data = np.array([(1,2,'State-gov',13,'Never-married','Adm-clerical','White','Male','USA'),\
-# (2,3,'Self-emp',13,'Married','Exec-managerial','White','Male','USA'),\
-# (3,2,'Private',9,'Divorced','Handlers-cleaners','White','Male','USA'),\
-# (4,3,'Private',7,'Married','Handlers-cleaners','Black','Male','USA'),\
-# (5,1,'Private',13,'Married','Prof-specialty','Black','Female','Cuba'),\
-# (6,2,'Private',14,'Married','Exec-managerial','White','Female','USA'),\
-# (7,3,'Private',5,'Any','Other-service','Black','Female','Jamaica'),\
-# (9,1,'Private',14,'Never-married','Prof-specialty','White','Female','USA')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('martial-status','U20'),('occupation','U20'),('race','U20'),('sex','U20'),('native-country','U20')] )
+tree_dict = parse_heirarchies('heirarchy.txt')
+ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)
 
 
-# outliers = np.array([(8,3,'Self-emp',9,'Married','Exec-managerial','White','Male','USA'),\
-#     (10,2,'Private',13,'Married','Exec-managerial','White','Male','USA'),\
-# (11,2,'Private',10,'Married','Exec-managerial','Black','Male','USA')], dtype=[('id','i4'),('age','i4'),('workclass','U20'),('education-num','i4'),('martial-status','U20'),('occupation','U20'),('race','U20'),('sex','U20'),('native-country','U20')])
-# tree_dict = parse_heirarchies('heirarchy.txt')
-# print("test_data is: ")
-# print(test_data)
-# print()
-
-# print("groupings are: ")
-# ans,leftover = grouping_phase(test_data,[],3,tree_dict)
-# for group in ans:
-#     print(group)
-#     print()
-# print('xd')
-# print(leftover)
-
-# print("after adjustment:")
-# ans = (final_fker(ans,leftover,outliers,tree_dict))
-# for group in ans:
-#     print(group)
-#     print()
     
 
 
