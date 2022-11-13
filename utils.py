@@ -1,6 +1,7 @@
 import math
 import numpy as np
-
+import pandas as pd
+from typing import Dict, Type, List, Tuple
 
 # helper functions for working with categorical data
 
@@ -53,7 +54,7 @@ def find_num_leaf(node):
     return ans
 
 
-def find_path(val, node, path):
+def find_path(val: str, node: Type[Node], path: List[Type[Node]]) -> List[Type[Node]]:
     if node is None: return None
     path.append(node)
     if node.value == val:
@@ -64,9 +65,15 @@ def find_path(val, node, path):
     path.pop(-1)
     return None
 
-def find_parent_node(a, b , tree):
+def find_parent_node(a : str, b : str , tree : Type[Node]) -> Type[Node]:
+    # print("xd3")
+    # print(a)
+    # print(b)
+    # print([neigh.value for neigh in tree.neighbors])
     a_path = find_path(a,tree,[])
     b_path = find_path(b,tree,[])
+    # print(a_path)
+    # print(b_path)
     ans = None
     ind = 0
     while ind < len(a_path) and ind < len(b_path) and a_path[ind].value == b_path[ind].value:
@@ -115,10 +122,16 @@ def calculate_weighted_information_loss(cluster, tree_dict, weight_dict):
     info_loss = calc_information_loss(cluster,tree_dict)
     return get_weight_score(cluster, weight_dict) * info_loss
 
-def get_weight_score(cluster, weight_dict):
+def get_weight_score(cluster : pd.DataFrame, weight_dict : Dict[int,int]):
     ans = 0
-    for rec in cluster:
-        weight = weight_dict[rec['id']]
+    # print()
+    # print()
+    # print("HEREREREREEE")
+    print(cluster)
+    print(weight_dict)
+    for _, record in cluster.iterrows():
+        id = record['id']
+        weight = weight_dict[id]
         ans += weight*weight
     return math.sqrt(ans)
 
@@ -127,8 +140,8 @@ def get_weight_score(cluster, weight_dict):
 def calc_information_loss(equiv_class, tree_dict):
     
     ans = 0
-    print('xd2')
-    print(equiv_class.columns)
+    # print('xd2')
+    # print(equiv_class.columns)
     for name in equiv_class.columns:
         if name in tree_dict:
             ans += calc_categorical_information_loss(equiv_class[name], tree_dict[name])

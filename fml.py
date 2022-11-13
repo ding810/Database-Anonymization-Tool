@@ -191,6 +191,7 @@ print("fml")
 
 test_data = pd.read_csv('testing.csv')
 weight_dict, outliers = weighting(test_data, 3)
+print(weight_dict)
 outlier_records = test_data.loc[test_data['id'].isin(outliers)]
 outlier_inds = [np.where(test_data['id'] == outlier)[0][0] for outlier in outliers]
 test_data = test_data.drop(test_data.index[outlier_inds])
