@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-def weighting(table: pd.DataFrame, beta: int):
+def weighting(table: pd.DataFrame, beta: int = None): 
     num_records = table.shape[0]
     num_attr = table.shape[1]
 
