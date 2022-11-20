@@ -115,7 +115,7 @@ def find_next_centroid(T,T_copy, D, dic):
     return max_record_ind
         
 
-def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], weight_dict : Dict[int,int]) -> Tuple[List[pd.DataFrame], pd.DataFrame]: 
+def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], weight_dict : Dict[int,int], L : int, sensitive_attribute : str) -> Tuple[List[pd.DataFrame], pd.DataFrame]: 
     D = np.empty([T.shape[0], math.ceil(T.shape[0]/K)])
     T_copy = T.copy(deep=True)
     row_to_ind_dic = {}
@@ -131,39 +131,41 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
     print()
     iteration = 1
     while T_copy.shape[0] >= K:
-        print("starting iteration: ",iteration)
-        print(D)
-        print(T_copy)
-        print("printing E: ")
-        print(len(E))
-        for cluster in E:
-            print(cluster)
-            print()
-        print()
         e = None
         centroid_ind = None
+        seen = set()
+        iter_copy  = T_copy.copy(deep=True)
         if not E:
             e = pd.DataFrame(T_copy.loc[[rand_ind]])
+            seen.add(T_copy.loc[[rand_ind]][sensitive_attribute])
+            iter_copy = iter_copy.drop([rand_ind])
             T_copy = T_copy.drop([rand_ind])
             centroid_ind = rand_ind
+            
         else:
             centroid_ind = find_next_centroid(T,T_copy,D,row_to_ind_dic)
-            print("centroid_ind is: ", centroid_ind)
-            print()
             e = pd.DataFrame(T_copy.loc[[centroid_ind]])
+            seen.add(T_copy.loc[[centroid_ind]][sensitive_attribute])
             T_copy = T_copy.drop(centroid_ind)
+            iter_copy = iter_copy.drop([centroid_ind])
+            
+
             
         while e.shape[0] < K:
-            ind = find_next_record(T_copy,e,tree_dict, weight_dict)
-            e = pd.concat([e,T_copy.loc[[ind]]])
-            T_copy = T_copy.drop(ind)
+            ind = find_next_record(iter_copy,e,tree_dict, weight_dict)
+            if len(seen) >= L or iter_copy.loc[[ind]][sensitive_attribute] not in seen:
+                seen.add(iter_copy.loc[[ind]][sensitive_attribute])
+                e = pd.concat([e,T_copy.loc[[ind]]])
+                T_copy = T_copy.drop(ind)
+                iter_copy = iter_copy.drop(ind)
+            else:
+                iter_copy = iter_copy.drop(ind)
 
         E.append(e)
         T_indices = list(T.index)
         for i,ind in enumerate(T_indices):
             D[i,len(E)-1] = dist(T.loc[centroid_ind], T.loc[ind], T,tree_dict)
-        iteration += 1
-
+        
     left_over = None
     if T_copy.shape[0] > 0:
         left_over = T_copy
