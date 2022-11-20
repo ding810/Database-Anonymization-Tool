@@ -124,13 +124,9 @@ def calculate_weighted_information_loss(cluster, tree_dict, weight_dict):
 
 def get_weight_score(cluster : pd.DataFrame, weight_dict : Dict[int,int]):
     ans = 0
-    # print()
-    # print()
-    # print("HEREREREREEE")
-    print(cluster)
-    print(weight_dict)
-    for _, record in cluster.iterrows():
-        id = record['id']
+    indices = list(cluster.index)
+    for ind in indices:
+        id = cluster.loc[ind]['id']
         weight = weight_dict[id]
         ans += weight*weight
     return math.sqrt(ans)
@@ -140,18 +136,14 @@ def get_weight_score(cluster : pd.DataFrame, weight_dict : Dict[int,int]):
 def calc_information_loss(equiv_class, tree_dict):
     
     ans = 0
-    # print('xd2')
-    # print(equiv_class.columns)
     for name in equiv_class.columns:
+        if name == 'id':
+            continue
         if name in tree_dict:
             ans += calc_categorical_information_loss(equiv_class[name], tree_dict[name])
         else:
             ans += (max(equiv_class[name]) - min(equiv_class[name])/len(equiv_class))
     ans *= len(equiv_class)
-    # print("info loss for equiv class:")
-    # print(equiv_class)
-    # print("is: ", ans)
-    # print()
     return ans
 
 

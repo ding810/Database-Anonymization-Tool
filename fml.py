@@ -4,19 +4,25 @@ import pandas as pd
 from utils import *
 from typing import Dict, Type, List, Tuple
 
-def weighting(table: pd.DataFrame, beta: int) -> Tuple[Dict[int, int], List[int]]:
-    hasID = False
-    if "ID" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
-        hasID = True
-        ids = table["ID"]
-        table = table.drop("ID", axis=1)
-
+def weighting(table: pd.DataFrame, beta: int):
     num_records = table.shape[0]
+    num_attr = table.shape[1]
+
+    hasID = False
+    if "ID" in table or "id" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
+        hasID = True
+        if "ID" in table:
+            ids = table["ID"]
+            table = table.drop("ID", axis=1)
+        else:
+            ids = table["id"]
+            table = table.drop("id", axis=1)
 
     if beta is None: 
         beta = int(0.05 * num_records)
 
     numerical = table.select_dtypes(include='number') # DataFrame with only numerical attributes
+    num_numer_attr = numerical.shape[1]
 
     categorical = table.select_dtypes(exclude='number') # DataFrame with only categorical attributes
     num_categ_attr = categorical.shape[1]
@@ -87,27 +93,22 @@ def weighting(table: pd.DataFrame, beta: int) -> Tuple[Dict[int, int], List[int]
 def find_next_record(T, e,tree_dict, weight_dict):
     min_loss = math.inf
     min_record_ind = -1
-    for ind in range(T.shape[0]):
-        # new = 
-        print()
-        print()
-        # print('xd')
-        # print(e)
-        # print(new)
-        print
-        print(T.iloc[[ind]])
-        result = calculate_weighted_information_loss(pd.concat([e,T.iloc[[ind]]]), tree_dict, weight_dict)
+    indices = list(T.index)
+    for ind in indices:
+        result = calculate_weighted_information_loss(pd.concat([e,T.loc[[ind]]]), tree_dict, weight_dict)
         if result < min_loss:
             min_loss = result
             min_record_ind = ind
     return min_record_ind
 
-def find_next_centroid(T,T_copy, D):
-    max_dist = math.inf
+def find_next_centroid(T,T_copy, D, dic):
+    max_dist = -1* math.inf
     max_record_ind = -1
-    for ind in range(T_copy.shape[0]):
-        real_ind = np.where(T['id'] == T_copy[ind]['id'])[0][0]
-        distance = np.linalg.norm(D[real_ind])
+    indices = list(T_copy.index)
+
+        
+    for ind in indices:
+        distance = np.linalg.norm(D[dic[ind]])
         if distance > max_dist:
             max_dist = distance
             max_record_ind = ind
@@ -117,43 +118,52 @@ def find_next_centroid(T,T_copy, D):
 def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], weight_dict : Dict[int,int]) -> Tuple[List[pd.DataFrame], pd.DataFrame]: 
     D = np.empty([T.shape[0], math.ceil(T.shape[0]/K)])
     T_copy = T.copy(deep=True)
+    row_to_ind_dic = {}
+
     E = []
-    rand_ind = np.random.randint(0,T.shape[0])
+    indices = list(T.index)
+    for i, ind in enumerate(indices):
+        row_to_ind_dic[ind] = i
+
+    rand = np.random.randint(0,len(indices))
+    rand_ind = indices[rand]
     print("rand_ind is: ", rand_ind)
-
+    print()
+    iteration = 1
     while T_copy.shape[0] >= K:
+        print("starting iteration: ",iteration)
+        print(D)
+        print(T_copy)
+        print("printing E: ")
+        print(len(E))
+        for cluster in E:
+            print(cluster)
+            print()
+        print()
+        e = None
+        centroid_ind = None
         if not E:
-            e = pd.DataFrame(T_copy.iloc[[rand_ind]])
+            e = pd.DataFrame(T_copy.loc[[rand_ind]])
             T_copy = T_copy.drop([rand_ind])
-            while e.shape[0] < K:
-                ind = find_next_record(T_copy,e,tree_dict, weight_dict)
-                print("ind is: ", ind)
-                print(T_copy)
-                e = e.append(T_copy.iloc[[ind]], ignore_index=True)
-                T_copy = T_copy.drop(rand_ind)
-                # e = np.append(e,T_copy[ind])
-                # T_copy = np.delete(T_copy, ind)
-            E.append(e)
-            print()
-            print()
-            print("xd 100")
-            print(e)
-
-            for i in range(D.shape[0]):
-                D[i,len(E)-1] = dist(T.loc[rand_ind],T.loc[i],T,tree_dict)
-            
+            centroid_ind = rand_ind
         else:
-            centroid_ind = find_next_centroid(T,T_copy,D)
-            centroid = T_copy.loc[centroid_ind]
-            e = pd.DataFrame(T_copy.loc[centroid_ind])
-            T_copy = np.delete(T_copy, centroid_ind)
-            while e.size < K:
-                ind = find_next_record(T_copy,e,tree_dict, weight_dict)
-                e = np.append(e,T_copy[ind])
-                T_copy = np.delete(T_copy, ind)
-            E.append(e)
-            for i in range(D.shape[0]):
-                D[i,len(E)-1] = dist(centroid,T[i],T,tree_dict)
+            centroid_ind = find_next_centroid(T,T_copy,D,row_to_ind_dic)
+            print("centroid_ind is: ", centroid_ind)
+            print()
+            e = pd.DataFrame(T_copy.loc[[centroid_ind]])
+            T_copy = T_copy.drop(centroid_ind)
+            
+        while e.shape[0] < K:
+            ind = find_next_record(T_copy,e,tree_dict, weight_dict)
+            e = pd.concat([e,T_copy.loc[[ind]]])
+            T_copy = T_copy.drop(ind)
+
+        E.append(e)
+        T_indices = list(T.index)
+        for i,ind in enumerate(T_indices):
+            D[i,len(E)-1] = dist(T.loc[centroid_ind], T.loc[ind], T,tree_dict)
+        iteration += 1
+
     left_over = None
     if T_copy.shape[0] > 0:
         left_over = T_copy
@@ -191,15 +201,24 @@ print("fml")
 
 test_data = pd.read_csv('testing.csv')
 weight_dict, outliers = weighting(test_data, 3)
-print(weight_dict)
 outlier_records = test_data.loc[test_data['id'].isin(outliers)]
+print('Outlier records are: ')
+print(outlier_records)
+print()
+
+# def better way to do this
 outlier_inds = [np.where(test_data['id'] == outlier)[0][0] for outlier in outliers]
 test_data = test_data.drop(test_data.index[outlier_inds])
+print("remaining test_data is: ")
 print(test_data)
+print()
 
 tree_dict = parse_heirarchies('heirarchy.txt')
 ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)
-
+print("Printing ans")
+for cluster in ans:
+    print(cluster)
+    print()
 
     
 
