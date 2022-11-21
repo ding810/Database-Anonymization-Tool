@@ -2,13 +2,14 @@ import numpy as np
 import pandas as pd
 import utils
 
-def generalize(groups: list[pd.DataFrame], hierarchies: dict):
+def generalize(groups: list[pd.DataFrame], hierarchies: dict) -> pd.DataFrame:
     output = []
     for group in groups:
+        group_df = pd.DataFrame([])
         for attr in group:
             isnumeric = pd.api.types.is_numeric_dtype(group[attr])
             if isnumeric:
-                result = "Average: " + str(round(np.average(group[attr]), 3)) + " Range: " + str(np.min(group[attr])) + " - " + str(np.max(group[attr]))
+                result = "Average: " + str(round(np.average(group[attr]), 3)) + ", Range: " + str(np.min(group[attr])) + " - " + str(np.max(group[attr]))
             else:
                 if attr in hierarchies:
                     tree = hierarchies[attr]
@@ -20,9 +21,18 @@ def generalize(groups: list[pd.DataFrame], hierarchies: dict):
                             lca = utils.find_parent_node(group[attr][ind], lca.value, tree)
                     result = str(lca.value)
                 else:
-                    result = str(list(np.unique(group[attr])))
-            output.append(result)
-    return output
+                    result = ""
+                    for val in np.unique(group[attr]):
+                        result += str(val)
+                        result += ", "
+                    result = result[:len(result)-2] # remove the ", " of the last value
+
+            # add column to end of dataframe, with frequency = num rows
+            col = [result for i in range(group.shape[0])]
+            group_df.insert(group_df.shape[1], attr, col)
+
+        output.append(group_df)
+    return pd.concat(output, ignore_index=True)
 
 test_group_1 = [[ 2, 'Private', 14, 'Married', 'Exec-managerial', 'White', 'Female', 'USA'],
  [ 2, 'Private',  9, 'Divorced', 'Handlers-cleaners', 'White', 'Male', 'USA'],
@@ -45,6 +55,7 @@ print(test_group_2)
 # output = generalize([test_group_1, test_group_2], {})
 # for i in output:
 #     print(i)
-output = generalize([test_group_1, test_group_2], utils.parse_heirarchies('heirarchy.txt'))
-for i in output:
-    print(i)
+output = generalize([test_group_1, test_group_2], utils.parse_hierarchies('heirarchy.txt'))
+print(output)
+# for i in output:
+#     print(i)

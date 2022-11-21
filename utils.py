@@ -11,7 +11,7 @@ class Node:
         self.neighbors = []
 
     
-def parse_heirarchies(path):
+def parse_hierarchies(path):
     graph_dict = {}
     with open(path,'r') as f:
         nextLine = f.readline()

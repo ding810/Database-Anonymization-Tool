@@ -113,8 +113,6 @@ def add_leftovers(clusters,outliers,leftovers, tree_dict, weight_dict):
 
 
 
-print("fml")
-
 test_data = pd.read_csv('testing.csv')
 weight_dict, outliers = weighting(test_data, 3)
 outlier_records = test_data.loc[test_data['id'].isin(outliers)]
@@ -129,7 +127,7 @@ print("remaining test_data is: ")
 print(test_data)
 print()
 
-tree_dict = parse_heirarchies('heirarchy.txt')
+tree_dict = parse_hierarchies('heirarchy.txt')
 ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)
 print("Printing ans")
 for cluster in ans:
@@ -137,6 +135,3 @@ for cluster in ans:
     print()
 
     
-
-
-
