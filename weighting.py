@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+from typing import Tuple, List, Dict
 
-def weighting(table: pd.DataFrame, beta: int = None): 
+def weighting(table: pd.DataFrame, beta: int = None) -> Tuple[Dict, List]: 
     num_records = table.shape[0]
     num_attr = table.shape[1]
 

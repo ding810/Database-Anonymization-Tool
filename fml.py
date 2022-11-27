@@ -89,28 +89,29 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
     return E,left_over
 
 
-def add_leftovers(clusters,outliers,leftovers, tree_dict, weight_dict):
-    leftovers = list(leftovers)
-    outliers = list(outliers)
-    while leftovers:
-        r = leftovers.pop(-1)
+def add_leftovers(clusters : List[pd.DataFrame], 
+                  outliers : pd.DataFrame, 
+                  leftovers : pd.DataFrame, 
+                  tree_dict : Dict, 
+                  weight_dict : Dict):
+    for ind1, record in leftovers.iterrows():
         min_ind = -1
         min_info_loss = math.inf
-        for ind,cluster in enumerate(clusters):
-            wil = calculate_weighted_information_loss(np.append(cluster,r), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
+        for ind2,cluster in enumerate(clusters):
+            wil = calculate_weighted_information_loss(pd.concat([cluster, record]), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
             if wil < min_info_loss:
-                min_info_loss, min_ind = wil, ind
-        clusters[min_ind] = np.append(clusters[min_ind],r)
+                min_info_loss, min_ind = wil, ind2
+        clusters[min_ind] = pd.concat(clusters[min_ind],record)
     
-    while outliers:
-        r = outliers.pop(-1)
+    for ind1, record in outliers.iterrows():
         min_ind = -1
         min_info_loss = math.inf
-        for ind,cluster in enumerate(clusters):
-            wil = calculate_weighted_information_loss(np.append(cluster,r), tree_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
+        for ind2,cluster in enumerate(clusters):
+            wil = calculate_weighted_information_loss(pd.concat([cluster, record]), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
             if wil < min_info_loss:
-                min_info_loss, min_ind = wil, ind
-        clusters[min_ind] = np.append(clusters[min_ind],r)
+                min_info_loss, min_ind = wil, ind2
+        clusters[min_ind] = pd.concat(clusters[min_ind],record)
+    
     return clusters
 
 
@@ -129,11 +130,11 @@ print("remaining test_data is: ")
 print(test_data)
 print()
 
-tree_dict = parse_hierarchies('heirarchy.txt')
-ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)
-print("Printing ans")
-for cluster in ans:
-    print(cluster)
-    print()
+# tree_dict = parse_hierarchies('heirarchy.txt')
+# ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)
+# print("Printing ans")
+# for cluster in ans:
+#     print(cluster)
+#     print()
 
     

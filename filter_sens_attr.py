@@ -2,7 +2,7 @@ import pandas as pd
 import warnings
 from typing import Tuple
 
-def filter_sens_attr(table: pd.DataFrame, sens_attr: str = None) -> Tuple(pd.DataFrame, pd.Series):
+def filter_sens_attr(table: pd.DataFrame, sens_attr: str = None) -> Tuple[pd.DataFrame, pd.Series]:
     if sens_attr in table.columns:
         sens_attr_column = table[sens_attr]
     else:
