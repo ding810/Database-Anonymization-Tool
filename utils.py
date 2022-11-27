@@ -118,7 +118,7 @@ def numerical_dist(r1,r2,name,data):
 
 
 # helper functions in calculating information loss in a dataset
-def calculate_weighted_information_loss(cluster, tree_dict, weight_dict):
+def calculate_weighted_information_loss(cluster: pd.DataFrame, tree_dict, weight_dict: Dict[int,int]):
     info_loss = calc_information_loss(cluster,tree_dict)
     return get_weight_score(cluster, weight_dict) * info_loss
 
@@ -133,7 +133,7 @@ def get_weight_score(cluster : pd.DataFrame, weight_dict : Dict[int,int]):
 
 
 
-def calc_information_loss(equiv_class, tree_dict):
+def calc_information_loss(equiv_class: pd.DataFrame, tree_dict):
     
     ans = 0
     for name in equiv_class.columns:

@@ -43,8 +43,6 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
 
     rand = np.random.randint(0,len(indices))
     rand_ind = indices[rand]
-    print("rand_ind is: ", rand_ind)
-    print()
     iteration = 1
     while T_copy.shape[0] >= K:
         e = None
@@ -53,7 +51,7 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
         iter_copy  = T_copy.copy(deep=True)
         if not E:
             e = pd.DataFrame(T_copy.loc[[rand_ind]])
-            seen.add(T_copy.loc[[rand_ind]][sensitive_attribute])
+            seen.add(rand_ind)
             iter_copy = iter_copy.drop([rand_ind])
             T_copy = T_copy.drop([rand_ind])
             centroid_ind = rand_ind
@@ -61,16 +59,16 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
         else:
             centroid_ind = find_next_centroid(T,T_copy,D,row_to_ind_dic)
             e = pd.DataFrame(T_copy.loc[[centroid_ind]])
-            seen.add(T_copy.loc[[centroid_ind]][sensitive_attribute])
+            seen.add(centroid_ind)
             T_copy = T_copy.drop(centroid_ind)
             iter_copy = iter_copy.drop([centroid_ind])
             
 
             
-        while e.shape[0] < K:
+        while e.shape[0] < K and iter_copy.shape[0] > 0:
             ind = find_next_record(iter_copy,e,tree_dict, weight_dict)
-            if len(seen) >= L or iter_copy.loc[[ind]][sensitive_attribute] not in seen:
-                seen.add(iter_copy.loc[[ind]][sensitive_attribute])
+            if len(seen) >= L or ind not in seen:
+                seen.add(ind)
                 e = pd.concat([e,T_copy.loc[[ind]]])
                 T_copy = T_copy.drop(ind)
                 iter_copy = iter_copy.drop(ind)
@@ -130,11 +128,11 @@ print("remaining test_data is: ")
 print(test_data)
 print()
 
-# tree_dict = parse_hierarchies('heirarchy.txt')
-# ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict)
-# print("Printing ans")
-# for cluster in ans:
-#     print(cluster)
-#     print()
+tree_dict = parse_hierarchies('heirarchy.txt')
+ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict, 3, "race")
+print("Printing ans")
+for cluster in ans:
+    print(cluster)
+    print()
 
     
