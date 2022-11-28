@@ -113,26 +113,51 @@ def add_leftovers(clusters : List[pd.DataFrame],
     return clusters
 
 
+t1 = pd.read_csv('adult.csv').iloc[:20,:]
+print()
+print()
+print("ooga")
+print(t1)
+print()
 
-test_data = pd.read_csv('testing.csv')
-weight_dict, outliers = weighting(test_data, 3)
-outlier_records = test_data.loc[test_data['id'].isin(outliers)]
-print('Outlier records are: ')
+weight_dict, outliers = weighting(t1,3)
+print("weight dict")
+print(weight_dict)
+print()
+
+print("outliers")
+print(outliers)
+outlier_records = t1.loc[outliers]
 print(outlier_records)
 print()
 
-# def better way to do this
-outlier_inds = [np.where(test_data['id'] == outlier)[0][0] for outlier in outliers]
-test_data = test_data.drop(test_data.index[outlier_inds])
-print("remaining test_data is: ")
-print(test_data)
+removed_t1 = t1.drop(outliers)
+print("with outliers removed")
+print(removed_t1)
 print()
 
-tree_dict = parse_hierarchies('heirarchy.txt')
-ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict, 3, "race")
+tree_dict = parse_hierarchies('hy.txt')
+ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,3,"race")
 print("Printing ans")
 for cluster in ans:
     print(cluster)
     print()
+# test_data = pd.read_csv('testing.csv')
+# weight_dict, outliers = weighting(test_data, 3)
+# outlier_records = test_data.loc[test_data['id'].isin(outliers)]
+# print('Outlier records are: ')
+# print(outlier_records)
+# print()
+
+# # def better way to do this
+# outlier_inds = [np.where(test_data['id'] == outlier)[0][0] for outlier in outliers]
+# test_data = test_data.drop(test_data.index[outlier_inds])
+# print("remaining test_data is: ")
+# print(test_data)
+# print()
+
+# tree_dict = parse_hierarchies('heirarchy.txt')
+# ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict, 3, "race")
+
 
     

@@ -12,6 +12,7 @@ class Node:
 
     
 def parse_hierarchies(path):
+    print("path is, ",path)
     graph_dict = {}
     with open(path,'r') as f:
         nextLine = f.readline()
