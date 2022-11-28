@@ -55,7 +55,7 @@ print(test_group_2)
 # output = generalize([test_group_1, test_group_2], {})
 # for i in output:
 #     print(i)
-output = generalize([test_group_1, test_group_2], utils.parse_hierarchies('heirarchy.txt'))
+output = generalize([test_group_1, test_group_2], utils.parse_hierarchies('hierarchy.txt'))
 print(output)
 # for i in output:
 #     print(i)

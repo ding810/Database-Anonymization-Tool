@@ -136,7 +136,7 @@ print("with outliers removed")
 print(removed_t1)
 print()
 
-tree_dict = parse_hierarchies('hy.txt')
+tree_dict = parse_hierarchies('hierarchy.txt')
 ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,3,"race")
 print("Printing ans")
 for cluster in ans:
