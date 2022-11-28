@@ -32,7 +32,7 @@ def find_next_centroid(T,T_copy, D, dic):
         
 
 def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], weight_dict : Dict[int,int], L : int, sensitive_attribute : str) -> Tuple[List[pd.DataFrame], pd.DataFrame]: 
-    D = np.empty([T.shape[0], math.ceil(T.shape[0]/K)])
+    D = np.empty([T.shape[0], math.floor(T.shape[0]/K)])
     T_copy = T.copy(deep=True)
     row_to_ind_dic = {}
 
@@ -45,35 +45,52 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
     rand_ind = indices[rand]
     iteration = 1
     while T_copy.shape[0] >= K:
+        # print("remaining records are")
+        # print(T_copy)
+        # print()
+        # print("D is")
+        # print(D)
+        # print()
         e = None
         centroid_ind = None
         seen = set()
         iter_copy  = T_copy.copy(deep=True)
         if not E:
             e = pd.DataFrame(T_copy.loc[[rand_ind]])
-            seen.add(rand_ind)
+            seen.add(T_copy.loc[rand_ind][sensitive_attribute])
             iter_copy = iter_copy.drop([rand_ind])
             T_copy = T_copy.drop([rand_ind])
             centroid_ind = rand_ind
             
         else:
             centroid_ind = find_next_centroid(T,T_copy,D,row_to_ind_dic)
+            # print("centroid ind is : ",centroid_ind)
+            # print()
             e = pd.DataFrame(T_copy.loc[[centroid_ind]])
-            seen.add(centroid_ind)
+            seen.add(T_copy.loc[centroid_ind][sensitive_attribute])
             T_copy = T_copy.drop(centroid_ind)
             iter_copy = iter_copy.drop([centroid_ind])
             
 
             
-        while e.shape[0] < K and iter_copy.shape[0] > 0:
+        while e.shape[0] < K:
             ind = find_next_record(iter_copy,e,tree_dict, weight_dict)
-            if len(seen) >= L or ind not in seen:
-                seen.add(ind)
+            # print("current cluster is")
+            # print(e)
+            # print("next record is")
+            # print(iter_copy.loc[[ind]])
+            # print("seen is")
+            # print(seen)
+            # print()
+            if len(seen) >= L or iter_copy.loc[ind][sensitive_attribute] not in seen:
+                seen.add(iter_copy.loc[ind][sensitive_attribute])
                 e = pd.concat([e,T_copy.loc[[ind]]])
                 T_copy = T_copy.drop(ind)
                 iter_copy = iter_copy.drop(ind)
             else:
                 iter_copy = iter_copy.drop(ind)
+                if iter_copy.shape[0] == 0: 
+                    raise BadParametersError
 
         E.append(e)
         T_indices = list(T.index)
@@ -113,51 +130,34 @@ def add_leftovers(clusters : List[pd.DataFrame],
     return clusters
 
 
-t1 = pd.read_csv('adult.csv').iloc[:20,:]
-print()
-print()
-print("ooga")
-print(t1)
-print()
+t1 = pd.read_csv('adult.csv', skipinitialspace=True).iloc[:20,:]
+# print()
+# print()
+# print("ooga")
+# print(t1)
+# print()
 
 weight_dict, outliers = weighting(t1,3)
-print("weight dict")
-print(weight_dict)
-print()
+# print("weight dict")
+# print(weight_dict)
+# print()
 
-print("outliers")
-print(outliers)
+# print("outliers")
+# print(outliers)
 outlier_records = t1.loc[outliers]
-print(outlier_records)
-print()
+# print(outlier_records)
+# print()
 
 removed_t1 = t1.drop(outliers)
-print("with outliers removed")
-print(removed_t1)
-print()
+# print("with outliers removed")
+# print(removed_t1)
+# print()
 
 tree_dict = parse_hierarchies('hierarchy.txt')
-ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,3,"race")
+# print("tree dict is")
+# print(tree_dict)
+ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,2,"race")
 print("Printing ans")
 for cluster in ans:
     print(cluster)
     print()
-# test_data = pd.read_csv('testing.csv')
-# weight_dict, outliers = weighting(test_data, 3)
-# outlier_records = test_data.loc[test_data['id'].isin(outliers)]
-# print('Outlier records are: ')
-# print(outlier_records)
-# print()
-
-# # def better way to do this
-# outlier_inds = [np.where(test_data['id'] == outlier)[0][0] for outlier in outliers]
-# test_data = test_data.drop(test_data.index[outlier_inds])
-# print("remaining test_data is: ")
-# print(test_data)
-# print()
-
-# tree_dict = parse_hierarchies('heirarchy.txt')
-# ans,leftover = grouping_phase(test_data,3,tree_dict, weight_dict, 3, "race")
-
-
-    

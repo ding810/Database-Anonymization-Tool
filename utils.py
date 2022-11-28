@@ -4,6 +4,8 @@ import pandas as pd
 from typing import Dict, Type, List, Tuple
 
 # helper functions for working with categorical data
+class BadParametersError(Exception):
+    pass
 
 class Node:
     def __init__(self, val = None):
@@ -12,7 +14,6 @@ class Node:
 
     
 def parse_hierarchies(path):
-    print("path is, ",path)
     graph_dict = {}
     with open(path,'r') as f:
         nextLine = f.readline()
@@ -56,6 +57,7 @@ def find_num_leaf(node):
 
 
 def find_path(val: str, node: Type[Node], path: List[Type[Node]]) -> List[Type[Node]]:
+    if val == '?': return[node]
     if node is None: return None
     path.append(node)
     if node.value == val:
@@ -115,6 +117,8 @@ def categorical_dist(r1,r2,name,tree):
 
 def numerical_dist(r1,r2,name,data):
     column_range = max(data[name]) - min(data[name])
+    if column_range == 0: return 0
+
     return abs(r1[name] - r2[name])/column_range
 
 
@@ -127,8 +131,8 @@ def get_weight_score(cluster : pd.DataFrame, weight_dict : Dict[int,int]):
     ans = 0
     indices = list(cluster.index)
     for ind in indices:
-        id = cluster.loc[ind]['id']
-        weight = weight_dict[id]
+        # id = cluster.loc[ind]['id']
+        weight = weight_dict[ind]
         ans += weight*weight
     return math.sqrt(ans)
 
