@@ -4,7 +4,6 @@ import pandas as pd
 from utils import *
 from typing import Dict, Type, List, Tuple
 from weighting import weighting
-from generalization import generalize
 
 def find_next_record(T, e,tree_dict, weight_dict):
     min_loss = math.inf
@@ -17,7 +16,7 @@ def find_next_record(T, e,tree_dict, weight_dict):
     # print()
     for ind in indices:
         result = calculate_weighted_information_loss(pd.concat([e,T.loc[[ind]]]), tree_dict, weight_dict)
-        print(ind)
+        # print(ind)
         if result < min_loss:
             min_loss = result
             min_record_ind = ind
@@ -121,23 +120,25 @@ def add_leftovers(clusters : List[pd.DataFrame],
                   leftovers : pd.DataFrame, 
                   tree_dict : Dict, 
                   weight_dict : Dict):
-    for ind1, record in leftovers.iterrows():
+    leftover_indices = leftovers.index
+    outlier_indices = outliers.index
+    for ind in leftover_indices:
         min_ind = -1
         min_info_loss = math.inf
-        for ind2,cluster in enumerate(clusters):
-            wil = calculate_weighted_information_loss(pd.concat([cluster, record]), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
+        for clus_ind,cluster in enumerate(clusters):
+            wil = calculate_weighted_information_loss(pd.concat([cluster, leftovers.loc[[ind]]]), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
             if wil < min_info_loss:
-                min_info_loss, min_ind = wil, ind2
-        clusters[min_ind] = pd.concat(clusters[min_ind],record)
-    
-    for ind1, record in outliers.iterrows():
+                min_info_loss, min_ind = wil, clus_ind
+        clusters[min_ind] = pd.concat([clusters[min_ind],leftovers.loc[[ind]]])
+
+    for ind in outlier_indices:
         min_ind = -1
         min_info_loss = math.inf
-        for ind2,cluster in enumerate(clusters):
-            wil = calculate_weighted_information_loss(pd.concat([cluster, record]), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
+        for clus_ind,cluster in enumerate(clusters):
+            wil = calculate_weighted_information_loss(pd.concat([cluster, outliers.loc[[ind]]]), tree_dict, weight_dict) - calculate_weighted_information_loss(cluster, tree_dict, weight_dict)
             if wil < min_info_loss:
-                min_info_loss, min_ind = wil, ind2
-        clusters[min_ind] = pd.concat(clusters[min_ind],record)
+                min_info_loss, min_ind = wil, clus_ind
+        clusters[min_ind] = pd.concat([clusters[min_ind],outliers.loc[[ind]]])
     
     return clusters
 
@@ -169,6 +170,8 @@ tree_dict = parse_hierarchies('hierarchy.txt')
 # print("tree dict is")
 # print(tree_dict)
 ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,2,"race")
+
+final_ans = add_leftovers(ans,outlier_records,leftover,tree_dict,weight_dict)
 print("Printing ans")
 for cluster in ans:
     print(cluster)
