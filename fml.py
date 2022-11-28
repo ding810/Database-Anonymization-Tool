@@ -10,11 +10,21 @@ def find_next_record(T, e,tree_dict, weight_dict):
     min_loss = math.inf
     min_record_ind = -1
     indices = list(T.index)
+    # print('remaining records are')
+    # print(T)
+    # print(indices)
+    # print(e)
+    # print()
     for ind in indices:
         result = calculate_weighted_information_loss(pd.concat([e,T.loc[[ind]]]), tree_dict, weight_dict)
+        print(ind)
         if result < min_loss:
             min_loss = result
             min_record_ind = ind
+    if min_record_ind == -1:
+        # print("failed here")
+        # print()
+        raise Exception("failed in find next record bc returned -1")
     return min_record_ind
 
 def find_next_centroid(T,T_copy, D, dic):
@@ -87,6 +97,8 @@ def grouping_phase(T : pd.DataFrame, K : int, tree_dict : Dict[str,Type[Node]], 
                 e = pd.concat([e,T_copy.loc[[ind]]])
                 T_copy = T_copy.drop(ind)
                 iter_copy = iter_copy.drop(ind)
+                if e.shape[0] < K and iter_copy.shape[0] == 0: 
+                    raise BadParametersError
             else:
                 iter_copy = iter_copy.drop(ind)
                 if iter_copy.shape[0] == 0: 
