@@ -2,17 +2,18 @@ import pandas as pd
 from filter_sens_attr import filter_sens_attr
 from weighting import weighting
 from fml import grouping_phase, add_leftovers
-from utils import parse_hierarchies
+from utils import parse_hierarchies, BadParametersError
 from generalization import generalize
 from l_diversity import l_diverse
 from typing import Dict
 
 def main():
-    original_table : pd.DataFrame = pd.read_csv(input("Please enter a link/path to the table that you wish to be anonymized as a CSV: \n"))
+    original_table : pd.DataFrame = pd.read_csv(input("Please enter a link/path to the table that you wish to be anonymized as a CSV: \n"), skipinitialspace=True).iloc[:20, :]
     beta : int = int(input("Please input the number of outliers in your dataset: \n"))
     sens_attr : str = input("Please input the name of the sensitive attribute in your dataset: \n")
     tree_dict : Dict = parse_hierarchies(input("Please enter the path to the text file containing the hierarchy of attributes: \n"))
     k : int = int(input("Please input the k value that you would like your anonymized table to have: \n"))
+    l : int = int(input("Please input the l value that you would like your anonymized table to have: \n"))
 
     output_location : str = input("Please input the file path and file name where you would like your anonymized dataset to be stored: \n")
     got_path = False
@@ -29,16 +30,36 @@ def main():
     table, sens_attr_column = filter_sens_attr(original_table, sens_attr)
     print("Weighting records...")
     weightscores, outliers = weighting(table, beta)
+    outlier_records = original_table.loc[outliers]
+    no_outlier_original_table = original_table.drop(outliers)
     print("Grouping records together...")
-    groups, leftovers = grouping_phase(original_table, k, tree_dict, weightscores, 3, sens_attr)
+    got_groups = False
+    while not got_groups:
+        count = 0
+        succeeded = False
+        while count < 5 and not succeeded:
+            try:
+                groups, leftovers = grouping_phase(no_outlier_original_table, k, tree_dict, weightscores, l, sens_attr)
+            except BadParametersError:
+                count += 1
+            else:
+                succeeded = True
+        if not succeeded:
+            print("Unable to anonymize dataset with given k and l")
+            k : int = int(input("Please input the k value that you would like your anonymized table to have: \n"))
+            l : int = int(input("Please input the l value that you would like your anonymized table to have: \n"))
+        else:
+            got_groups = True
+    
     print("Adding outiers and leftovers...")
-    final_groups = add_leftovers(groups, outliers, leftovers, tree_dict, weightscores)
+    final_groups = add_leftovers(groups, outlier_records, leftovers, tree_dict, weightscores)
+    print("\n\n")
+    print(final_groups)
+    print("\n\n")
     print("Generalizing groups...")
     generalized_groups = generalize(final_groups, tree_dict)
 
-    print("Completed anonymization! Calculating the l-diversity value for this anonymized dataset...")
-    l = l_diverse(final_groups, sens_attr)
-    print("The l-diversity value for this dataset is: {}".format(l))
+    print("Completed anonymization!")
     print("Storing at {} now...".format(output_location))
     generalized_groups.to_csv(output_file)
     print("Stored! Below is a preview of your anonynmized dataset. \n")

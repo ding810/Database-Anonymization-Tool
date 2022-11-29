@@ -7,7 +7,7 @@ def weighting(table: pd.DataFrame, beta: int = None) -> Tuple[Dict, List]:
     num_attr = table.shape[1]
 
     hasID = False
-    if "ID" in table or "id" in table: # GENERALIZE LATER, find better way to see if records are IDed by attribute in table
+    if "ID" in table or "id" in table:
         hasID = True
         if "ID" in table:
             ids = table["ID"]
@@ -59,31 +59,33 @@ def weighting(table: pd.DataFrame, beta: int = None) -> Tuple[Dict, List]:
     cscores_sorted = sorted(cscores.items(), key = lambda x: x[1]) # categorical scores sorted by score ascending
     num_rankings = {} # maps record number to numerical score ranking (starting from 1 to num_records)
     cat_rankings = {} # maps record number to categorical score ranking (starting from 1 to num_records)
-    for ind in range(num_records):
-        num_rankings[nscores_sorted[ind][0]] = ind+1
-        cat_rankings[cscores_sorted[ind][0]] = ind+1
+    count = 1
+    for ind in table.index:
+        num_rankings[nscores_sorted[ind][0]] = count
+        cat_rankings[cscores_sorted[ind][0]] = count
+        count += 1
     arscores = [] # average rank scores and their corresponding record index
     weightscores = {} # maps records to their weight scores
-    for recordind in range(num_records):
+    for recordind in table.index:
         score = np.average([num_rankings[recordind], cat_rankings[recordind]])
         arscores.append([score, recordind])
         weightscores[recordind] = num_records - score
     arscores.sort(key = lambda x: x[0])
-    outliers = [] # the indexes of the records that are outliers
+    outliers = []
     for i in arscores[num_records-beta:]:
         outliers.append(i[1])
     
-    weightscores_id = {} # maps record (by their true ID) to their weight scores
-    if hasID:
-        ind_to_id = ids.to_dict()
-        for key in weightscores:
-            weightscores_id[ind_to_id[key]] = weightscores[key]
-        for ind, out in enumerate(outliers):
-            outliers[ind] = ind_to_id[out]
-    else:
-        weightscores_id = weightscores
+    # weightscores_id = {} # maps record (by their true ID) to their weight scores
+    # if hasID:
+    #     ind_to_id = ids.to_dict()
+    #     for key in weightscores:
+    #         weightscores_id[ind_to_id[key]] = weightscores[key]
+    #     for ind, out in enumerate(outliers):
+    #         outliers[ind] = ind_to_id[out]
+    # else:
+    #     weightscores_id = weightscores
 
-    return (weightscores_id, outliers)
+    return (weightscores, outliers)
 
 def main():
     # test1 = pd.DataFrame({'a': [1, 2] * 3,
