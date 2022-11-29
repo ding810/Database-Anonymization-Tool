@@ -7,19 +7,19 @@ def generalize(groups: list[pd.DataFrame], hierarchies: dict, sens_attr: str, se
     for group in groups:
         group_df = pd.DataFrame([])
         for attr in group:
-            if attr is not sens_attr:
+            if attr != sens_attr:
                 isnumeric = pd.api.types.is_numeric_dtype(group[attr])
                 if isnumeric:
-                    result = "Average: " + str(round(np.average(group[attr]), 3)) + ", Range: " + str(np.min(group[attr])) + " - " + str(np.max(group[attr]))
+                    result = "~" + str(round(np.average(group[attr]), 3))
                 else:
                     if attr in hierarchies:
                         tree = hierarchies[attr]
                         lca = None
                         for ind in range(len(group[attr])):
                             if ind == 0:
-                                lca = utils.find_parent_node(group[attr][ind], group[attr][ind+1], tree)
+                                lca = utils.find_parent_node(group[attr][group.index[ind]], group[attr][group.index[ind+1]], tree)
                             else:
-                                lca = utils.find_parent_node(group[attr][ind], lca.value, tree)
+                                lca = utils.find_parent_node(group[attr][group.index[ind]], lca.value, tree)
                         result = str(lca.value)
                     else:
                         result = ""
@@ -56,7 +56,7 @@ print(test_group_2)
 # output = generalize([test_group_1, test_group_2], {})
 # for i in output:
 #     print(i)
-output = generalize([test_group_1, test_group_2], utils.parse_hierarchies('hierarchy.txt'))
-print(output)
+# output = generalize([test_group_1, test_group_2], utils.parse_hierarchies('hierarchy.txt'))
+# print(output)
 # for i in output:
 #     print(i)
