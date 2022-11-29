@@ -1,7 +1,7 @@
 import pandas as pd
 from filter_sens_attr import filter_sens_attr
 from weighting import weighting
-from fml import grouping_phase, add_leftovers
+from k_anonymity import grouping_phase, add_leftovers
 from utils import parse_hierarchies, BadParametersError
 from generalization import generalize
 from l_diversity import l_diverse
