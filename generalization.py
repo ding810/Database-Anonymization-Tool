@@ -2,35 +2,36 @@ import numpy as np
 import pandas as pd
 import utils
 
-def generalize(groups: list[pd.DataFrame], hierarchies: dict) -> pd.DataFrame:
+def generalize(groups: list[pd.DataFrame], hierarchies: dict, sens_attr: str, sens_attr_column: pd.Series) -> pd.DataFrame:
     output = []
     for group in groups:
         group_df = pd.DataFrame([])
         for attr in group:
-            isnumeric = pd.api.types.is_numeric_dtype(group[attr])
-            if isnumeric:
-                result = "Average: " + str(round(np.average(group[attr]), 3)) + ", Range: " + str(np.min(group[attr])) + " - " + str(np.max(group[attr]))
-            else:
-                if attr in hierarchies:
-                    tree = hierarchies[attr]
-                    lca = None
-                    for ind in range(len(group[attr])):
-                        if ind == 0:
-                            lca = utils.find_parent_node(group[attr][ind], group[attr][ind+1], tree)
-                        else:
-                            lca = utils.find_parent_node(group[attr][ind], lca.value, tree)
-                    result = str(lca.value)
+            if attr is not sens_attr:
+                isnumeric = pd.api.types.is_numeric_dtype(group[attr])
+                if isnumeric:
+                    result = "Average: " + str(round(np.average(group[attr]), 3)) + ", Range: " + str(np.min(group[attr])) + " - " + str(np.max(group[attr]))
                 else:
-                    result = ""
-                    for val in np.unique(group[attr]):
-                        result += str(val)
-                        result += ", "
-                    result = result[:len(result)-2] # remove the ", " of the last value
+                    if attr in hierarchies:
+                        tree = hierarchies[attr]
+                        lca = None
+                        for ind in range(len(group[attr])):
+                            if ind == 0:
+                                lca = utils.find_parent_node(group[attr][ind], group[attr][ind+1], tree)
+                            else:
+                                lca = utils.find_parent_node(group[attr][ind], lca.value, tree)
+                        result = str(lca.value)
+                    else:
+                        result = ""
+                        for val in np.unique(group[attr]):
+                            result += str(val)
+                            result += ", "
+                        result = result[:len(result)-2] # remove the ", " of the last value
 
-            # add column to end of dataframe, with frequency = num rows
-            col = [result for i in range(group.shape[0])]
-            group_df.insert(group_df.shape[1], attr, col)
-
+                # add column to end of dataframe, with frequency = num rows
+                col = [result for i in range(group.shape[0])]
+                group_df.insert(group_df.shape[1], attr, col)
+        group_df.insert(group_df.shape[1], sens_attr, sens_attr_column)
         output.append(group_df)
     return pd.concat(output, ignore_index=True)
 

@@ -57,7 +57,7 @@ def main():
     print(final_groups)
     print("\n\n")
     print("Generalizing groups...")
-    generalized_groups = generalize(final_groups, tree_dict)
+    generalized_groups = generalize(final_groups, tree_dict, sens_attr, sens_attr_column)
 
     print("Completed anonymization!")
     print("Storing at {} now...".format(output_location))
