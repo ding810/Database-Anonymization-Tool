@@ -142,37 +142,37 @@ def add_leftovers(clusters : List[pd.DataFrame],
     
     return clusters
 
+if __name__ == '__main__':
+    t1 = pd.read_csv('adult.csv', skipinitialspace=True).iloc[:20,:]
+    # print()
+    # print()
+    # print("ooga")
+    # print(t1)
+    # print()
 
-t1 = pd.read_csv('adult.csv', skipinitialspace=True).iloc[:20,:]
-# print()
-# print()
-# print("ooga")
-# print(t1)
-# print()
+    weight_dict, outliers = weighting(t1,3)
+    # print("weight dict")
+    # print(weight_dict)
+    # print()
 
-weight_dict, outliers = weighting(t1,3)
-# print("weight dict")
-# print(weight_dict)
-# print()
+    # print("outliers")
+    # print(outliers)
+    outlier_records = t1.loc[outliers]
+    # print(outlier_records)
+    # print()
 
-# print("outliers")
-# print(outliers)
-outlier_records = t1.loc[outliers]
-# print(outlier_records)
-# print()
+    removed_t1 = t1.drop(outliers)
+    # print("with outliers removed")
+    # print(removed_t1)
+    # print()
 
-removed_t1 = t1.drop(outliers)
-# print("with outliers removed")
-# print(removed_t1)
-# print()
+    tree_dict = parse_hierarchies('hierarchy.txt')
+    # print("tree dict is")
+    # print(tree_dict)
+    ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,2,"race")
 
-tree_dict = parse_hierarchies('hierarchy.txt')
-# print("tree dict is")
-# print(tree_dict)
-ans, leftover = grouping_phase(removed_t1,3,tree_dict,weight_dict,2,"race")
-
-final_ans = add_leftovers(ans,outlier_records,leftover,tree_dict,weight_dict)
-print("Printing ans")
-for cluster in ans:
-    print(cluster)
-    print()
+    final_ans = add_leftovers(ans,outlier_records,leftover,tree_dict,weight_dict)
+    print("Printing ans")
+    for cluster in ans:
+        print(cluster)
+        print()
