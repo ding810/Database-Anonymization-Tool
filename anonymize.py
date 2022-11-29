@@ -53,9 +53,6 @@ def main():
     
     print("Adding outiers and leftovers...")
     final_groups = add_leftovers(groups, outlier_records, leftovers, tree_dict, weightscores)
-    print("\n\n")
-    print(final_groups)
-    print("\n\n")
     print("Generalizing groups...")
     generalized_groups = generalize(final_groups, tree_dict, sens_attr, sens_attr_column)
 
